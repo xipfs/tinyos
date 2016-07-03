@@ -30,7 +30,7 @@ disk_error:
 
 sectors_error:
     mov bx, SECTORS_ERROR
-    call print
+    call log16
 
 disk_loop:
     jmp $
