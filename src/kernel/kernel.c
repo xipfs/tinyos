@@ -1,32 +1,39 @@
-;文件名: kernel.c
-;作者: 0xC000005
-;日期: 2016/06/29
-;作用: 内核模块
+#include "../cpu/isr.h"
+#include "../drivers/screen.h"
+#include "kernel.h"
+#include "../libc/string.h"
+#include "../libc/mem.h"
+#include <stdint.h>
 
-#include "../drivers/ports.h"
+void kernel_main() {
+    isr_install();
+    irq_install();
 
-void main() {
+    asm("int $2");
+    asm("int $3");
 
-    port_byte_out(0x3d4, 14);
-    int position = port_byte_in(0x3d5);
-    position = position << 8;
+    kprint("Type something, it will go through the kernel\n"
+        "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
+}
 
-    port_byte_out(0x3d4, 15); 
-    position += port_byte_in(0x3d5);
-    int offset_from_vga = position * 2;
-    char *vga = 0xb8000;
-    vga[offset_from_vga] = 'T'; 
-    vga[offset_from_vga+1] = 0x0f;
-    vga[offset_from_vga+2] = 'i'; 
-    vga[offset_from_vga+3] = 0x0f;
-    vga[offset_from_vga+4] = 'n'; 
-    vga[offset_from_vga+5] = 0x0f;
-    vga[offset_from_vga+6] = 'y'; 
-    vga[offset_from_vga+7] = 0x0f;
-    vga[offset_from_vga+8] = 'O'; 
-    vga[offset_from_vga+9] = 0x0f;
-    vga[offset_from_vga+10] = 's'; 
-    vga[offset_from_vga+11] = 0x0f;
-    vga[offset_from_vga+12] = '!'; 
-    vga[offset_from_vga+13] = 0x0f;
+void user_input(char *input) {
+    if (strcmp(input, "END") == 0) {
+        kprint("Stopping the CPU. Bye!\n");
+        asm volatile("hlt");
+    } else if (strcmp(input, "PAGE") == 0) {
+        uint32_t phys_addr;
+        uint32_t page = kmalloc(1000, 1, &phys_addr);
+        char page_str[16] = "";
+        hex_to_ascii(page, page_str);
+        char phys_str[16] = "";
+        hex_to_ascii(phys_addr, phys_str);
+        kprint("Page: ");
+        kprint(page_str);
+        kprint(", physical address: ");
+        kprint(phys_str);
+        kprint("\n");
+    }
+    kprint("You said: ");
+    kprint(input);
+    kprint("\n> ");
 }

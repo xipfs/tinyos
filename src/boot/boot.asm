@@ -1,7 +1,7 @@
-;нд╪ЧцШ: boot.asm
-;вВуъ: 0xC000005
-;хуфз: 2016/06/29
-;вВсц: ╦╨тП╟яжВс╡ел╣дMBR╨СX╦ЖихгЬ╪сть╣╫0:0x1000,х╩╨Срф╫╩©ьжфх╗║ё
+;Ф√┤Д╩╤Е░█: boot.asm
+;Д╫°Х─┘: 0xC000005
+;Ф≈╔Ф°÷: 2016/06/29
+;Д╫°Г■╗: Х╢÷Х╢ёФ┼┼Д╦╩Г║╛Г⌡≤Г └MBRЕ░▌XД╦╙Ф┴┤Е▄╨Е┼═Х╫╫Е┬╟0:0x1000,Г└╤Е░▌Г╖╩Д╨╓Ф▌╖Е┬╤Ф²┐Ц─┌
 
 org 0x7c00
 KERNEL_OFFSET equ 0x1000
@@ -11,14 +11,14 @@ boot:
     mov sp, bp
 
     mov bx, MSG_REAL_MODE 
-    call log16	; ╪гб╪хуж╬
-    call load_kernel	; ╪стьдз╨к
-    call jump_to_pm	; лЬв╙жа╠ё╩╓дёй╫
+    call log16	; Х╝╟Е╫∙Ф≈╔Е©≈
+    call load_kernel	; Е┼═Х╫╫Е├┘Ф═╦
+    call jump_to_pm	; Х╥ЁХ╫╛Х┤ЁД©²Ф┼╓Ф╗║Е╪▐
     jmp $
 
-%include "boot/log.asm"	; ╪стьхуж╬дё©И
-%include "boot/disk.asm"	; ╪стьс╡елдё©И
-%include "boot/pm.asm"	; ╪сть╠ё╩╓дёй╫дё©И
+%include "boot/log.asm"	; Е┼═Х╫╫Ф≈╔Е©≈Ф╗║Е²≈
+%include "boot/disk.asm"	; Е┼═Х╫╫Г║╛Г⌡≤Ф╗║Е²≈
+%include "boot/pm.asm"	; Е┼═Х╫╫Д©²Ф┼╓Ф╗║Е╪▐Ф╗║Е²≈
 
 [bits 16]
 load_kernel:
@@ -28,7 +28,7 @@ load_kernel:
     mov bx, KERNEL_OFFSET
     mov dh, 16
     mov dl, [BOOT_DRIVE]
-    call disk_load	; ╪стьс╡елйЩ╬щ
+    call disk_load	; Е┼═Х╫╫Г║╛Г⌡≤Ф∙╟Ф█╝
     ret
 
 [bits 32]

@@ -3,7 +3,10 @@
 ;日期: 2016/06/29
 ;作用: 将代码转移到由高级语言(c语言)来实现.
 
+global _start;
 [bits 32]
-[extern main]
-call main
-jmp $
+
+_start:
+    [extern kernel_main]
+    call kernel_main
+    jmp $
