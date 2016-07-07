@@ -1,5 +1,5 @@
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c libc/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h libc/*.h)
+C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c lib/*.c)
+HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h lib/*.h)
 OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o} 
 
 CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
@@ -34,4 +34,4 @@ debug: tinyos.bin kernel.elf
 
 clean:
 	rm -rf *.bin *.dis *.o tinyos.bin *.elf
-	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o libc/*.o
+	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o lib/*.o
