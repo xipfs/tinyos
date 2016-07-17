@@ -21,7 +21,7 @@ boot:
     call jump_to_pm	             ; 跳转至保护模式
     jmp $
 
-%include "boot/log.asm"	         ; 加载日志模块
+%include "boot/log.asm"          ; 加载日志模块
 %include "boot/disk.asm"	       ; 加载硬盘模块
 %include "boot/pm.asm"	         ; 加载保护模式模块
 
