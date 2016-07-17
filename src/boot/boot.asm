@@ -4,7 +4,7 @@
 ; *  作者:   0xC000005                                                     *
 ; *  日期:   2016/06/29                                                    *
 ; *  Blog:   www.codeidea.cn                                               *
-; *  功能:   负责把主硬盘的MBR后X个扇区加载到0:0x1000,然后移交控制权           *
+; *  功能:   负责把主硬盘的MBR后X个扇区加载到0:0x1000,然后移交控制权       *
 ; *                                                                        *
 ; **************************************************************************
 
@@ -22,8 +22,8 @@ boot:
     jmp $
 
 %include "boot/log.asm"          ; 加载日志模块
-%include "boot/disk.asm"	       ; 加载硬盘模块
-%include "boot/pm.asm"	         ; 加载保护模式模块
+%include "boot/disk.asm"         ; 加载硬盘模块
+%include "boot/pm.asm"**         ; 加载保护模式模块
 
 [bits 16]
 load_kernel:
@@ -33,7 +33,7 @@ load_kernel:
     mov bx, KERNEL_OFFSET
     mov dh, 16
     mov dl, [BOOT_DRIVE]
-    call disk_load	             ; 加载硬盘数据
+    call disk_load               ; 加载硬盘数据
     ret
 
 [bits 32]
