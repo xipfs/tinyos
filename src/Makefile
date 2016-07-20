@@ -1,6 +1,6 @@
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c lib/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h lib/*.h)
-OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o} 
+C_SOURCES = $(wildcard kernel/*.c cpu/*.c lib/*.c)
+HEADERS = $(wildcard kernel/*.h cpu/*.h lib/*.h)
+OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o}
 
 CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
 GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
@@ -14,7 +14,7 @@ kernel.bin: boot/kernel_entry.o ${OBJ}
 	i386-elf-ld -o $@ -Ttext 0x1000 $^ --oformat binary
 
 kernel.elf: boot/kernel_entry.o ${OBJ}
-	i386-elf-ld -o $@ -Ttext 0x1000 $^ 
+	i386-elf-ld -o $@ -Ttext 0x1000 $^
 
 run: tinyos.bin
 	qemu-system-i386 -k en-us -fda tinyos.bin
@@ -34,4 +34,4 @@ debug: tinyos.bin kernel.elf
 
 clean:
 	rm -rf *.bin *.dis *.o tinyos.bin *.elf
-	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o lib/*.o
+	rm -rf kernel/*.o boot/*.bin boot/*.o cpu/*.o lib/*.o

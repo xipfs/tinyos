@@ -24,7 +24,7 @@ void hex_to_ascii(int n, char str[]) {
     int i;
     for (i = 28; i > 0; i -= 4) {
         tmp = (n >> i) & 0xF;
-        if (tmp == 0 && zeros == 0) 
+        if (tmp == 0 && zeros == 0)
         	continue;
         zeros = 1;
         if (tmp > 0xA) append(str, tmp - 0xA + 'a');
@@ -68,4 +68,27 @@ int strcmp(char s1[], char s2[]) {
         if (s1[i] == '\0') return 0;
     }
     return s1[i] - s2[i];
+}
+
+int convertStringToInt(char *str)
+{
+    int t = 0, p = 0;
+    int len;
+    len = strlen(str);
+    while(len)
+    {
+        t+= (str[len-1]-'0')*pow(10, p++);
+        len--;
+    }
+    return t;
+}
+
+void strcpy(char* to, char* from)
+{
+    char *to1 = to;
+    while(*from)
+    {
+        *to1++ = *from++;
+    }
+    *to1++ = '\0';
 }

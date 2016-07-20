@@ -1,9 +1,8 @@
 #include "../cpu/isr.h"
-#include "../drivers/screen.h"
 #include "kernel.h"
 #include "../lib/string.h"
 #include "../lib/mem.h"
-#include <stdint.h>
+#include "../lib/stdio.h"
 
 void kernel_main() {
     isr_install();
@@ -11,15 +10,15 @@ void kernel_main() {
 
     asm("int $2");
     asm("int $3");
-    
-    kprint("Type something, it will go through the kernel\n"
+
+    printf("Type something, it will go through the kernel\n"
         "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
-    
+
 }
 
 void user_input(char *input) {
     if (strcmp(input, "END") == 0) {
-        kprint("Stopping the CPU. Bye!\n");
+        printf("Stopping the CPU. Bye!\n");
         asm volatile("hlt");
     } else if (strcmp(input, "PAGE") == 0) {
         uint32_t phys_addr;
@@ -28,13 +27,13 @@ void user_input(char *input) {
         hex_to_ascii(page, page_str);
         char phys_str[16] = "";
         hex_to_ascii(phys_addr, phys_str);
-        kprint("Page: ");
-        kprint(page_str);
-        kprint(", physical address: ");
-        kprint(phys_str);
-        kprint("\n");
+        printf("Page: ");
+        printf(page_str);
+        printf(", physical address: ");
+        printf(phys_str);
+        printf("\n");
     }
-    kprint("You said: ");
-    kprint(input);
-    kprint("\n> ");
+    printf("You said: ");
+    printf(input);
+    printf("\n> ");
 }

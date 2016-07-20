@@ -1,9 +1,9 @@
 ;Filename : boot.asm
 ;Author   : 0xC000005
-;Website  : www.codeidea.cn                                             
-;Date     : 2016/06/29                                         
-;                                                      
-;负责把主硬盘的MBR后X个扇区加载到0:0x1000,然后移交控制权                                                          
+;Website  : www.codeidea.cn
+;Date     : 2016/06/29
+;
+;负责把主硬盘的MBR后X个扇区加载到0:0x1000,然后移交控制权
 
 org 0x7c00
 KERNEL_OFFSET equ 0x1000
@@ -18,9 +18,9 @@ boot:
     call jump_to_pm              ; 跳转到保护模式
     jmp $
 
-%include "boot/log.asm"    
-%include "boot/disk.asm"  
-%include "boot/pm.asm" 
+%include "boot/log.asm"
+%include "boot/disk.asm"
+%include "boot/pm.asm"
 
 [bits 16]
 load_kernel:

@@ -2,10 +2,13 @@
 #define PORTS_H
 
 #include <stdint.h>
+// 端口写一个字节
+void outb(uint16_t port, uint8_t value);
 
-unsigned char port_byte_in (uint16_t port);
-void port_byte_out (uint16_t port, uint8_t data);
-unsigned short port_word_in (uint16_t port);
-void port_word_out (uint16_t port, uint16_t data);
+// // 端口读一个字节
+uint8_t inb(uint16_t port);
+
+// // 端口读一个字
+uint16_t inw(uint16_t port);
 
 #endif

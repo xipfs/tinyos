@@ -8,5 +8,6 @@ int strlen(char s[]);
 void backspace(char s[]);
 void append(char s[], char n);
 int strcmp(char s1[], char s2[]);
-
+void strcpy(char* to, char* from);
+int convertStringToInt(char *str);
 #endif

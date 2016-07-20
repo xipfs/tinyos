@@ -1,22 +1,27 @@
 #include "ports.h"
 
-
-uint8_t port_byte_in (uint16_t port) {
-    uint8_t result;
-    asm("in %%dx, %%al" : "=a" (result) : "d" (port));
-    return result;
+// 端口写一个字节
+inline void outb(uint16_t port, uint8_t value)
+{
+    asm volatile ("outb %1, %0" : : "dN" (port), "a" (value));
 }
 
-void port_byte_out (uint16_t port, uint8_t data) {
-    asm volatile("out %%al, %%dx" : : "a" (data), "d" (port));
+// 端口读一个字节
+inline uint8_t inb(uint16_t port)
+{
+    uint8_t ret;
+
+    asm volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
+
+    return ret;
 }
 
-uint16_t port_word_in (uint16_t port) {
-    uint16_t result;
-    asm("in %%dx, %%ax" : "=a" (result) : "d" (port));
-    return result;
-}
+// 端口读一个字
+inline uint16_t inw(uint16_t port)
+{
+    uint16_t ret;
 
-void port_word_out (uint16_t port, uint16_t data) {
-    asm volatile("out %%ax, %%dx" : : "a" (data), "d" (port));
+    asm volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
+
+    return ret;
 }
