@@ -1,7 +1,16 @@
-#include "stdio.h"
-#include "time.h"
-#include "conio.h"
-#include "math.h"
+/*
+* File name: apps/games_2048.c
+* Author   : 0xC000005
+* Version  : 0.1
+* Date     : 2016/06/29
+* Description: 2048游戏实现
+*
+*/
+#include "../lib/stdio.h"
+#include "../lib/math.h"
+#include "../lib/timer.h"
+#include "../lib/io.h"
+#include "../kernel/keyboard.h"
 #include "games_2048.h"
 #define  LEN 4
 #define N 8
@@ -12,7 +21,8 @@
 #define RIGHT 77
 #define DOWN 80
 int score = 0;
-//Select 2 or 4 randomly.
+
+
 int selectDigit()
 {
 	int d;
@@ -22,14 +32,14 @@ int selectDigit()
 void initBoxes(int digit[][LEN])
 {
 	int temp;
-	int posX,  posY;		// The position(X, Y) of digit.
+	int posX,  posY;
 	srand((unsigned)time(NULL));
-	posX = abs(rand()%(LEN));	//The random position.
+	posX = abs(rand()%(LEN));
 	posY = abs(rand()%(LEN));
 	digit[posX][posY] = selectDigit();
-	while(1)		//Prevent the position from  being equal to occupied positions.
+	while(1)
 	{
-		if(temp = abs(rand()%(LEN)) != posX)
+		if((temp = abs(rand()%(LEN))) != posX)
 		{
 			posX = temp;
 			break;
@@ -37,7 +47,7 @@ void initBoxes(int digit[][LEN])
 	}
 	while(1)
 	{
-		if(temp = abs(rand()%(LEN))  != posY)
+		if( (temp = abs(rand()%(LEN)))  != posY)
 		{
 			posY = temp;
 			break;
@@ -48,10 +58,9 @@ void initBoxes(int digit[][LEN])
 }
 void createDigit(int digit[][LEN])
 {
-	int i, j;
-	int posX,  posY;// the rand position
+	int posX,  posY;
 	srand((unsigned)time(NULL));
-	while(1)		//Create a random position.
+	while(1)
 	{
 		posX = abs(rand())%LEN;
 		posY = abs(rand())%LEN;
@@ -60,15 +69,15 @@ void createDigit(int digit[][LEN])
 	}
 	digit[posX][posY] = selectDigit();
 }
-int getSpace(int n)		//manage the format.
+int getSpace(int n)
 {
-	if(n/10 == 0)//1
+	if(n/10 == 0)
 		return N-1;
-	else if(n/100 == 0)//2
+	else if(n/100 == 0)
 		return N-2;
-	else if(n/1000 == 0)//3
+	else if(n/1000 == 0)
 		return N-3;
-	else		//4
+	else
 		return N-4;
 }
 
@@ -76,14 +85,14 @@ int moveLeft(int digit[][LEN])
 {
 	int i, j;
 	int pos, flag;
-	int isMove = 0;		//Judge the positiond if have been moved.
+	int isMove = 0;
 	for(i=0; i<LEN; i++)
 	{
 		pos = -1;
 		flag = 0;
 		for(j=0; j<LEN; j++)
 		{
-			if(!digit[i][j] && !flag)		//The first barrier positon.
+			if(!digit[i][j] && !flag)
 			{
 				pos = j;
 				flag = 1;
@@ -115,7 +124,7 @@ int moveUp(int digit[][LEN])
 		flag = 0;
 		for(j=0; j<LEN; j++)
 		{
-			if(!digit[j][i] && !flag)		//The first barrier positon
+			if(!digit[j][i] && !flag)
 			{
 				pos = j;
 				flag = 1;
@@ -147,7 +156,7 @@ int moveRight(int digit[][LEN])
 		flag = 0;
 		for(j=LEN-1; j>=0; j--)
 		{
-			if(!digit[i][j] && !flag)		//The first barrier positon
+			if(!digit[i][j] && !flag)
 			{
 				pos = j;
 				flag = 1;
@@ -179,7 +188,7 @@ int moveDown(int digit[][LEN])
 		flag = 0;
 		for(j=LEN-1; j>=0; j--)
 		{
-			if(!digit[j][i] && !flag)		//The first barrier positon
+			if(!digit[j][i] && !flag)
 			{
 				pos = j;
 				flag = 1;
@@ -204,7 +213,7 @@ int addLeft(int digit[][LEN])
 {
 	int i, j;
 	int temp;
-	int isAdd = 0;	//Judge if there have the same digit.
+	int isAdd = 0;
 	for(i=0; i<LEN; i++)
 	{
 		for(j=0; j<LEN; j++)
@@ -301,7 +310,7 @@ int addDown(int digit[][LEN])
 		return 1;
 	return 0;
 }
-//Judge the game if  will over.
+
 int isOver(int digit[][LEN])
 {
 	int i, j;
@@ -326,45 +335,52 @@ int isOver(int digit[][LEN])
 void show(int digit[][LEN])
 {
 	int i, j, m, n, k;
-	console_clear();		// Clear the screen
-	printf("\n                                 2 0 4 8  Game                                   \n");
-	printf("================================================================================\n");//82
+	clear_screen();
+	kprint("\n                            TinyOs Game 2048                                    \n");
+	kprint("--------------------------------------------------------------------------------\n");//82
 	for(i=0; i<LEN; i++)
 	{
 		for(j=0; j<LEN; j++)
 		{
 			for(k=0; k<N+1; k++)
-				printf(" ");
+				kprint(" ");
 			if(digit[i][j] ==  0)
 			{
-				for(n=0; n<N; n++)
-					printf(" ");
+				for(n=0; n<N-1; n++)
+					kprint(" ");
+				kprint("|");
 			}
 			else
 			{
-				printf("%d", digit[i][j]);
-				for(m=0; m<getSpace(digit[i][j]); m++)
-					printf(" ");
+				setTextColor(rc_black, rc_light_red);
+				kprint("%d", digit[i][j]);
+				setTextColor(rc_black, rc_white);
+				for(m=0; m<getSpace(digit[i][j])-1; m++)
+					kprint(" ");
+				kprint("|");
 			}
-			printf(" ");
+			kprint(" ");
 		}
-		printf("\n\n\n");
+		kprint("\n");
+		kprint("--------------------------------------------------------------------------------\n");
+		kprint("\n");
 	}
-	printf("================================================================================\n");//82
+
 	for(k=0; k<N+1; k++)
-		printf(" ");
-	printf("score: %d\n\n", score);
+		kprint(" ");
+	kprint("Score: %d\n\n", score);
 	for(k=0; k<N+1; k++)
-		printf(" ");
-	printf("Esc---Exit\n\n");
+		kprint(" ");
+	kprint("Esc: Exit\n\n");
 }
 void keyDown(int digit[][LEN])
-{	int ch, k, m;
+{	int ch, k;
 	int isMove, isAdd;
 	score = 0;
 	while(1)
 	{
 		ch = getch();
+		kprint("%d",ch);
 		switch (ch)
 		{
 			case LEFT :
@@ -401,22 +417,22 @@ void keyDown(int digit[][LEN])
 				break;
 			case EXIT:
 				for(k=0; k<N+1; k++)
-					printf(" ");
-				printf("Exit success~\n\n");
+					kprint(" ");
+				kprint("Exit success~\n\n");
 				return ;
 		}
 		if(isOver(digit))
 		{
 			for(k=0; k<N+1; k++)
-				printf(" ");
-			printf("Oh no!Game over~\n\n");
+				kprint(" ");
+			kprint("Oh no!Game over~\n\n");
 		}
 	}
 }
 int game_play()
 {
-	int digit[LEN][LEN] = {0};		//The zero means that the position is none.
-	initBoxes(digit);			//Init the game.
-	keyDown(digit);			//Monitor the keyboard.
+	int digit[LEN][LEN] = {{0}};
+	initBoxes(digit);
+	keyDown(digit);
 	return 0;
 }

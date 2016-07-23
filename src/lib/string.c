@@ -1,5 +1,16 @@
+/*
+* File name: lib/string.c
+* Author   : 0xC000005
+* Version  : 0.1
+* Date     : 2016/06/29
+* Description: 字符串处理
+*
+*/
+
 #include "string.h"
+#include "math.h"
 #include <stdint.h>
+
 
 void int_to_ascii(int n, char str[]) {
     int i, sign;
@@ -24,8 +35,7 @@ void hex_to_ascii(int n, char str[]) {
     int i;
     for (i = 28; i > 0; i -= 4) {
         tmp = (n >> i) & 0xF;
-        if (tmp == 0 && zeros == 0)
-        	continue;
+        if (tmp == 0 && zeros == 0) continue;
         zeros = 1;
         if (tmp > 0xA) append(str, tmp - 0xA + 'a');
         else append(str, tmp + '0');
@@ -70,6 +80,16 @@ int strcmp(char s1[], char s2[]) {
     return s1[i] - s2[i];
 }
 
+void strcpy(char* to, char* from)
+{
+    char *to1 = to;
+    while(*from)
+    {
+        *to1++ = *from++;
+    }
+    *to1++ = '\0';
+}
+
 int convertStringToInt(char *str)
 {
     int t = 0, p = 0;
@@ -83,12 +103,23 @@ int convertStringToInt(char *str)
     return t;
 }
 
-void strcpy(char* to, char* from)
+void split(char *str, char ch,char x[][100])
 {
-    char *to1 = to;
-    while(*from)
+    int len = strlen(str);
+    int i = 0;
+    int j = 0;
+    for (i = 0; i<len; i++)
     {
-        *to1++ = *from++;
+        if (str[i] == ch)
+        {
+            str[i] = '\0';
+        }
     }
-    *to1++ = '\0';
+    for (i = 0; i<len; )
+    {
+        while(!str[i++]);
+        strcpy(x[j++], str+i-1);
+        while(str[i++]);
+    }
+    x[j][0] = '\0';
 }

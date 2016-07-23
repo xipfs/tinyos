@@ -1,39 +1,30 @@
-#include "../cpu/isr.h"
-#include "kernel.h"
+/*
+* File name: kernel/kernel.c
+* Author   : 0xC000005
+* Version  : 0.1
+* Date     : 2016/06/29
+* Description: 内核程序
+*
+*/
+
+
+#include <stdint.h>
+#include "../lib/stdio.h"
 #include "../lib/string.h"
 #include "../lib/mem.h"
-#include "../lib/stdio.h"
+#include "../apps/games_2048.h"
+#include "kernel.h"
+#include "isr.h"
+#include "../usr/shell.h"
 
-void kernel_main() {
+int kernel_main() {
     isr_install();
     irq_install();
 
     asm("int $2");
     asm("int $3");
 
-    printf("Type something, it will go through the kernel\n"
-        "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
-
-}
-
-void user_input(char *input) {
-    if (strcmp(input, "END") == 0) {
-        printf("Stopping the CPU. Bye!\n");
-        asm volatile("hlt");
-    } else if (strcmp(input, "PAGE") == 0) {
-        uint32_t phys_addr;
-        uint32_t page = kmalloc(1000, 1, &phys_addr);
-        char page_str[16] = "";
-        hex_to_ascii(page, page_str);
-        char phys_str[16] = "";
-        hex_to_ascii(phys_addr, phys_str);
-        printf("Page: ");
-        printf(page_str);
-        printf(", physical address: ");
-        printf(phys_str);
-        printf("\n");
-    }
-    printf("You said: ");
-    printf(input);
-    printf("\n> ");
+    shell();
+    while(1);
+    return 0;
 }

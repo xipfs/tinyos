@@ -1,3 +1,12 @@
+/*
+* File name: lib/math.c
+* Author   : 0xC000005
+* Version  : 0.1
+* Date     : 2016/06/29
+* Description: 常用的数学处理函数
+*
+*/
+
 #include "math.h"
 
 

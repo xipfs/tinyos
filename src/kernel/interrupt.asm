@@ -1,7 +1,12 @@
-; Defined in isr.c
+;Filename : kernel/interrupt.asm
+;Author   : 0xC000005
+;Website  : www.codeidea.cn
+;Date     : 2016/06/29
+;
+;定义中断框架代码
+
 [extern isr_handler]
 [extern irq_handler]
-
 
 isr_common_stub:
 	pusha
@@ -13,12 +18,11 @@ isr_common_stub:
 	mov fs, ax
 	mov gs, ax
 	push esp
-  cld
+    cld
 	call isr_handler
-	
 
-	pop eax 
-  pop eax
+	pop eax
+    pop eax
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
@@ -27,8 +31,9 @@ isr_common_stub:
 	add esp, 8
 	iret
 
+
 irq_common_stub:
-    pusha 
+    pusha
     mov ax, ds
     push eax
     mov ax, 0x10
@@ -38,8 +43,7 @@ irq_common_stub:
     mov gs, ax
     push esp
     cld
-    call irq_handler 
-    
+    call irq_handler
     pop ebx
     pop ebx
     mov ds, bx
@@ -48,8 +52,8 @@ irq_common_stub:
     mov gs, bx
     popa
     add esp, 8
-    iret 
-	
+    iret
+
 global isr0
 global isr1
 global isr2
@@ -99,7 +103,6 @@ global irq12
 global irq13
 global irq14
 global irq15
-
 
 isr0:
     push byte 0

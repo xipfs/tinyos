@@ -10,4 +10,7 @@ void append(char s[], char n);
 int strcmp(char s1[], char s2[]);
 void strcpy(char* to, char* from);
 int convertStringToInt(char *str);
+
+void split(char *str, char ch, char x[][100]);
+
 #endif

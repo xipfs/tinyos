@@ -1,10 +1,15 @@
 #ifndef _STDIO_H
 #define _STDIO_H
 
+#define VIDEO_ADDRESS 0xb8000
+#define MAX_ROWS 25
+#define MAX_COLS 80
+#define WHITE_ON_BLACK 0x0f
+#define RED_ON_WHITE 0xf4
 
-#ifndef NULL
-    #define NULL 0
-#endif
+#define REG_SCREEN_CTRL 0x3d4
+#define REG_SCREEN_DATA 0x3d5
+#define NULL 0
 
 #ifndef SCANF_MAX_BUFFER_LENGTH
 #define SCANF_MAX_BUFFER_LENGTH 4096
@@ -14,10 +19,7 @@
 #define RUN_SUCCESS 0
 #endif
 
-#include<stdint.h>
 
-
-//Color
 typedef
 enum real_color {
     rc_black = 0,
@@ -38,16 +40,27 @@ enum real_color {
     rc_white = 15
 } real_color_t;
 
-// 清屏操作
-void console_clear();
-void putch_color_pos(char c, real_color_t back, real_color_t fore, int x, int y);
-void printf(const char *format , ...);
+
+/* Public kernel API */
+void clear_screen();
+void kprint_at(char *message, int col, int row);
+void kprint(const char *format , ...);
+void putch(char c);
+/*
+Now support %s %c %d
+*/
+void kprint_backspace();
+
 int scanf(const char *format, ...);
+
 void gets(char *chs);
+
 void onKeyDown(char keycode);
+
 void onKeyUp(char keycode);
+
 void registerListenKey(void (*function)(char keycode));
+
 void setTextColor(real_color_t back, real_color_t front);
-int getch();
-int getchInStep(uint32_t step);
+
 #endif

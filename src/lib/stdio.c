@@ -1,211 +1,129 @@
+/*
+* File name: lib/stdio.c
+* Author   : 0xC000005
+* Version  : 0.1
+* Date     : 2016/06/29
+* Description: 标准输入输出
+*
+*/
 #include "stdio.h"
-#include "keyboard_map.h"
-#include "../cpu/ports.h"
+#include "mem.h"
+#include "string.h"
+#include "io.h"
+#include "../kernel/ports.h"
+#include <stdint.h>
 
-static uint16_t *video_memory = (uint16_t *)0xB8000;
+const char keyboard_map[128] =
+{
+    0,  27, '1', '2', '3', '4', '5', '6', '7', '8', /* 9 */
+  '9', '0', '-', '=', '\b', /* Backspace */
+  '\t',     /* Tab */
+  'q', 'w', 'e', 'r', /* 19 */
+  't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', /* Enter key */
+    0,      /* 29   - Control */
+  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', /* 39 */
+ '\'', '`',   0,    /* Left shift */
+ '\\', 'z', 'x', 'c', 'v', 'b', 'n',      /* 49 */
+  'm', ',', '.', '/',   0,        /* Right shift */
+  '*',
+    0,  /* Alt */
+  ' ',  /* Space bar */
+    0,  /* Caps lock */
+    0,  /* 59 - F1 key ... > */
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,  /* < ... F10 */
+    0,  /* 69 - Num lock*/
+    0,  /* Scroll Lock */
+    0,  /* Home key */
+    0,  /* Up Arrow */
+    0,  /* Page Up */
+  '-',
+    0,  /* Left Arrow */
+    0,
+    0,  /* Right Arrow */
+  '+',
+    0,  /* 79 - End key*/
+    0,  /* Down Arrow */
+    0,  /* Page Down */
+    0,  /* Insert Key */
+    0,  /* Delete Key */
+    0,   0,   0,
+    0,  /* F11 Key */
+    0,  /* F12 Key */
+    0,  /* All other keys are undefined */
+};
 
-
-
-static uint8_t cursor_x = 0;
-static uint8_t cursor_y = 0;
-
-static uint8_t is_shift_down = 0;
-static uint8_t font_size = 80;
+//The map of the keycode and character when shift button pressed.
+const char keyboard_map_1[128] =
+{
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', /* 9 */
+  '(', ')', '_', '+', '\b', /* Backspace */
+  '\t',     /* Tab */
+  'q', 'w', 'e', 'r', /* 19 */
+  't', 'y', 'u', 'i', 'o', 'p', '{', '}', '\n', /* Enter key */
+    0,      /* 29   - Control */
+  'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ':', /* 39 */
+ '"', '~',   0,    /* Left shift */
+ '|', 'z', 'x', 'c', 'v', 'b', 'n',      /* 49 */
+  'm', '<', '>', '?',   0,        /* Right shift */
+  '*',
+    0,  /* Alt */
+  ' ',  /* Space bar */
+    0,  /* Caps lock */
+    0,  /* 59 - F1 key ... > */
+    0,   0,   0,   0,   0,   0,   0,   0,
+    0,  /* < ... F10 */
+    0,  /* 69 - Num lock*/
+    0,  /* Scroll Lock */
+    0,  /* Home key */
+    0,  /* Up Arrow */
+    0,  /* Page Up */
+  '-',
+    0,  /* Left Arrow */
+    0,
+    0,  /* Right Arrow */
+  '+',
+    0,  /* 79 - End key*/
+    0,  /* Down Arrow */
+    0,  /* Page Down */
+    0,  /* Insert Key */
+    0,  /* Delete Key */
+    0,   0,   0,
+    0,  /* F11 Key */
+    0,  /* F12 Key */
+    0,  /* All other keys are undefined */
+};
 
 
 static real_color_t now_set_color_back = rc_black;
 static real_color_t now_set_color_front = rc_white;
 
 
+int get_cursor_offset();
+void set_cursor_offset(int offset);
+int print_char(char c, int col, int row, char attr);
+int get_offset(int col, int row);
+int get_offset_row(int offset);
+int get_offset_col(int offset);
 
-static void move_cursor()
-{
-
-    uint16_t cursorLocation = cursor_y * font_size + cursor_x;
-
-
-    outb(0x3D4, 14);                    // 告诉 VGA 我们要设置光标的高字节
-    outb(0x3D5, cursorLocation >> 8);   // 发送高 8 位
-    outb(0x3D4, 15);                    // 告诉 VGA 我们要设置光标的低字节
-    outb(0x3D5, cursorLocation);        // 发送低 8 位
-}
-
-//Clear the screen.
-void console_clear()
-{
-    uint8_t attribute_byte = (0 << 4) | (15 & 0x0F);
-    uint16_t blank = 0x20 | (attribute_byte << 8);
-
-    int i;
-    for (i = 0; i < font_size * 25; i++)
-    {
-        video_memory[i] = blank;    //Full the line with blank.
+void kprint_at(char *message, int col, int row) {
+    int offset;
+    if (col >= 0 && row >= 0)
+        offset = get_offset(col, row);
+    else {
+        offset = get_cursor_offset();
+        row = get_offset_row(offset);
+        col = get_offset_col(offset);
     }
 
-    cursor_x = 0;
-    cursor_y = 0;
-    move_cursor();  //Move cursor.
-}
-
-
-//Move screen up
-static void scroll()
-{
-    uint8_t attribute_byte = (0 << 4) | (15 & 0x0F);
-    uint16_t blank = 0x20 | (attribute_byte << 8);  // space 是 0x20
-
-    // cursor_y 到 25 的时候，就该换行了
-    if (cursor_y >= 25)
-    {
-        // 将所有行的显示数据复制到上一行，第一行永远消失了...
-        int i;
-
-        for (i = 0 * font_size; i < 24 * font_size; i++)   //Full the i-th line with i+1-th line.
-        {
-            video_memory[i] = video_memory[i+80];
-        }
-
-        // 最后的一行数据现在填充空格，不显示任何字符
-        for (i = 24 * font_size; i < 25 * font_size; i++)
-        {
-            video_memory[i] = blank;
-        }
-
-        // 向上移动了一行，所以 cursor_y 现在是 24
-        cursor_y = 24;
+    int i = 0;
+    while (message[i] != 0) {
+        offset = print_char(message[i++], col, row, WHITE_ON_BLACK);
+        row = get_offset_row(offset);
+        col = get_offset_col(offset);
     }
 }
 
-//Put a char to the screen with given color.
-void putch_color(char c, real_color_t back, real_color_t fore)
-{
-    uint8_t back_color = (uint8_t)back;
-    uint8_t fore_color = (uint8_t)fore;
-
-    uint8_t attribute_byte = (back_color << 4) | (fore_color & 0x0F);
-    uint16_t attribute = attribute_byte << 8;
-
-    if (c == 0x08 && cursor_x)      //Backspace
-    {
-        cursor_x--;
-    }
-    else if (c == 0x09)     //Tab
-    {
-        cursor_x = (cursor_x+8) & ~(8-1);
-    }
-    else if (c == '\r')
-    {
-        cursor_x = 0;
-    }
-    else if (c == '\n')
-    {
-        cursor_x = 0;
-        cursor_y++;
-    }
-    else if (c >= ' ')  //If the char is a normal character, show it.
-    {
-        video_memory[cursor_y*80 + cursor_x] = c | attribute;
-        cursor_x++;
-    }
-
-    if (cursor_x >= 80)     //Set cursor.
-    {
-        cursor_x = 0;
-        cursor_y ++;
-    }
-
-    scroll();       //Scroll screen if need.
-    move_cursor();
-}
-
-//Putch a char at given pos and color.
-void putch_color_pos(char c, real_color_t back, real_color_t fore, int x, int y)
-{
-    cursor_x = x;       //Set cursor.
-    cursor_y = y;
-    putch_color(c, back, fore);
-}
-
-//Write a string to screen.
-void console_write(char *cstr)
-{
-    while (*cstr)
-    {
-        putch(*cstr++);
-    }
-}
-
-//Put a char to the screen.
-void putch(char c)
-{
-    putch_color(c, now_set_color_back, now_set_color_front);        //Call putch_color with setted color.
-}
-
-//Write a unsigned int var to the screen.
-void console_write_uint32_t(uint32_t t)
-{
-
-    uint32_t tmp = 1000000000;
-    uint32_t tmp1;
-    char isFind = 0;
-    while(tmp)
-    {
-        tmp1 = t/tmp;
-        t = t%tmp;
-        if (tmp1)
-        {
-            putch('0'+tmp1);
-            isFind = 1;
-        }
-        else
-        {
-            if (isFind)
-            {
-                putch('0');
-            }
-        }
-        tmp = tmp/10;
-    }
-
-}
-
-void console_write_uint8_t(uint8_t t)
-{
-
-    uint8_t tmp = 100;
-    uint8_t tmp1;
-    char isFind = 0;
-    while(tmp)
-    {
-        tmp1 = t/tmp;
-        t = t%tmp;
-        if (tmp1)
-        {
-            putch('0'+tmp1);
-            isFind = 1;
-        }
-        else
-        {
-            if (isFind)
-            {
-                putch('0');
-            }
-        }
-        tmp = tmp/10;
-    }
-
-}
-
-//Write a string with given color.
-void console_write_color(char *cstr, real_color_t back, real_color_t fore)
-{
-    while (*cstr)   //Call putch_color to print string.
-    {
-        putch_color(*cstr++, back, fore);
-    }
-}
-
-//Deal print
 void itoa (char *buf, int base, int d)
 {
     char *p = buf;
@@ -213,7 +131,6 @@ void itoa (char *buf, int base, int d)
     unsigned long ud = d;
     int divisor = 10;
 
-    /* If %d is specified and D is minus, put `-' in the head. */
     if (base == 'd' && d < 0)
     {
         *p++ = '-';
@@ -223,7 +140,6 @@ void itoa (char *buf, int base, int d)
     else if (base == 'x')
         divisor = 16;
 
-    /* Divide UD by DIVISOR until UD == 0. */
     do
     {
         int remainder = ud % divisor;
@@ -232,10 +148,9 @@ void itoa (char *buf, int base, int d)
     }
     while (ud /= divisor);
 
-    /* Terminate BUF. */
+
     *p = 0;
 
-    /* Reverse BUF. */
     p1 = buf;
     p2 = p - 1;
     while (p1 < p2)
@@ -248,25 +163,22 @@ void itoa (char *buf, int base, int d)
     }
 }
 
-//The printf function.
-//It support %s %d %x
-void printf (const char *format, ...)
-{
-    char **arg = (char **) &format;     //Get the args.
+void kprint(const char *format , ...){
+    char **arg = (char **) &format;
     int c;
     char buf[20];
 
     arg++;
 
-    while ((c = *format++) != 0)        //Exec format.
+    while ((c = *format++) != 0)
     {
-        if (c != '%')   //If now %, print it
+        if (c != '%')
             putch(c);
         else
         {
             char *p;
 
-            c = *format++;  //Get the next arg.
+            c = *format++;
             switch (c)
             {
             case 'd':
@@ -286,7 +198,7 @@ void printf (const char *format, ...)
                     putch (*p++);
                 break;
 
-            default:        //If not support it, print the char.
+            default:
                 putch (*((int *) arg++));
                 break;
             }
@@ -294,18 +206,123 @@ void printf (const char *format, ...)
     }
 }
 
-//Get a character by keycode.
+void kprint_backspace() {
+    int offset = get_cursor_offset()-2;
+    int row = get_offset_row(offset);
+    int col = get_offset_col(offset);
+    print_char(0x08, col, row, WHITE_ON_BLACK);
+}
+
+
+void putch(char c){
+    int offset = get_cursor_offset();
+    int row = get_offset_row(offset);
+    int col = get_offset_col(offset);
+
+    uint8_t back_color = (uint8_t)now_set_color_back;
+    uint8_t fore_color = (uint8_t)now_set_color_front;
+
+    uint8_t attribute_byte = (back_color << 4) | (fore_color & 0x0F);
+
+    print_char(c, col, row, attribute_byte);
+}
+
+
+int print_char(char c, int col, int row, char attr) {
+    uint8_t *vidmem = (uint8_t*) VIDEO_ADDRESS;
+    if (!attr) attr = WHITE_ON_BLACK;
+
+    if (col >= MAX_COLS || row >= MAX_ROWS) {
+        vidmem[2*(MAX_COLS)*(MAX_ROWS)-2] = 'E';
+        vidmem[2*(MAX_COLS)*(MAX_ROWS)-1] = RED_ON_WHITE;
+        return get_offset(col, row);
+    }
+
+    int offset;
+    if (col >= 0 && row >= 0) offset = get_offset(col, row);
+    else offset = get_cursor_offset();
+
+    if (c == '\n') {
+        row = get_offset_row(offset);
+        offset = get_offset(0, row+1);
+    } else if (c == 0x08) {
+        offset = get_cursor_offset()-2;
+        vidmem[offset] = ' ';
+        vidmem[offset+1] = attr;
+    } else {
+        vidmem[offset] = c;
+        vidmem[offset+1] = attr;
+        offset += 2;
+    }
+
+    if (offset >= MAX_ROWS * MAX_COLS * 2) {
+        int i;
+        for (i = 1; i < MAX_ROWS; i++)
+            memory_copy((uint8_t*)(get_offset(0, i) + VIDEO_ADDRESS),
+                        (uint8_t*)(get_offset(0, i-1) + VIDEO_ADDRESS),
+                        MAX_COLS * 2);
+
+        char *last_line = (char*) (get_offset(0, MAX_ROWS-1) + (uint8_t*) VIDEO_ADDRESS);
+        for (i = 0; i < MAX_COLS * 2; i++) last_line[i] = 0;
+
+        offset -= 2 * MAX_COLS;
+    }
+
+    set_cursor_offset(offset);
+    return offset;
+}
+
+int get_cursor_offset() {
+
+    port_byte_out(REG_SCREEN_CTRL, 14);
+    int offset = port_byte_in(REG_SCREEN_DATA) << 8;
+    port_byte_out(REG_SCREEN_CTRL, 15);
+    offset += port_byte_in(REG_SCREEN_DATA);
+    return offset * 2;
+}
+
+void set_cursor_offset(int offset) {
+    offset /= 2;
+    port_byte_out(REG_SCREEN_CTRL, 14);
+    port_byte_out(REG_SCREEN_DATA, (uint8_t)(offset >> 8));
+    port_byte_out(REG_SCREEN_CTRL, 15);
+    port_byte_out(REG_SCREEN_DATA, (uint8_t)(offset & 0xff));
+}
+
+void clear_screen() {
+    int screen_size = MAX_COLS * MAX_ROWS;
+    int i;
+    uint8_t *screen = (uint8_t*) VIDEO_ADDRESS;
+
+    for (i = 0; i < screen_size; i++) {
+        screen[i*2] = ' ';
+        screen[i*2+1] = WHITE_ON_BLACK;
+    }
+    set_cursor_offset(get_offset(0, 0));
+}
+
+
+int get_offset(int col, int row) { return 2 * (row * MAX_COLS + col); }
+int get_offset_row(int offset) { return offset / (2 * MAX_COLS); }
+int get_offset_col(int offset) { return (offset - (get_offset_row(offset)*2*MAX_COLS))/2; }
+
+
+#define KEYBOARD_DATA_PORT 0x60
+#define KEYBOARD_STATUS_PORT 0x64
+static uint8_t is_shift_down = 0;
+
 char getCharByKeyCode(char keycode)
 {
     char ch;
-    if (keycode == 42 || keycode == 54)     //Shift is down.
+    if (keycode == 42 || keycode == 54)
     {
         is_shift_down = 1;
     }
-    ch = keyboard_map[keycode];
+    ch = keyboard_map[(int)keycode];
+
     if (is_shift_down)
     {
-        if (ch>='a' && ch <= 'z')       //Switch lowwer case and upper case.
+        if (ch>='a' && ch <= 'z')
         {
             ch += 'A' - 'a';
         }
@@ -315,13 +332,12 @@ char getCharByKeyCode(char keycode)
         }
         else
         {
-            ch = keyboard_map_1[keycode];
+            ch = keyboard_map_1[(int)keycode];
         }
     }
     return ch;
 }
 
-//Get a string while Enter pressed.
 void gets(char *chs)
 {
     char ch;
@@ -329,10 +345,10 @@ void gets(char *chs)
     int keycode;
     do
     {
-        keycode = getch();  //By getch() get the keycode.
+        keycode = getch();
         ch = getCharByKeyCode(keycode);
         keycode = -1;
-        if (ch == '\b')     //If backspace pressed.
+        if (ch == '\b')
         {
             if (pos>0)
             {
@@ -346,30 +362,27 @@ void gets(char *chs)
         {
             if (ch && ch != (char)27)
             {
-               chs[pos++] = ch;
+                chs[pos++] = ch;
                 putch(ch);
             }
         }
-
     }
-    while(ch!='\n');
+    while(ch!= '\n');
     chs[pos-1] = '\0';
 }
 
-//The scanf function, to get user input.
 int scanf(const char *format, ...)
 {
     char ch;
     int pos = 0;
     int pos1 = 0;
-    int keycode;
     char *p;
     char **arg = (char **) &format;
     char scanfStr[SCANF_MAX_BUFFER_LENGTH];
     arg++;
-    gets(scanfStr);     //By gets(), get a line.
+    gets(scanfStr);
     pos = 0;
-    while(*format)      //Decode the line to each var.
+    while(*format)
     {
         if (*format == '%')
         {
@@ -379,7 +392,7 @@ int scanf(const char *format, ...)
             pos1 = 0;
 
             p = *arg++;
-            while(scanfStr[pos] == ' ') pos++;  //Clear space
+            while(scanfStr[pos] == ' ') pos++;
             switch(ch)
             {
             case 'd':
@@ -388,7 +401,7 @@ int scanf(const char *format, ...)
                     tmp[pos1++] = scanfStr[pos++];
                 }
                 tmp[pos1++] = '\0';
-                *(int*)p = convertStringToInt(tmp);     //Convert string to a integer.
+                *(int*)p = convertStringToInt(tmp);
                 break;
             case 'c':
                 *p = scanfStr[pos++];
@@ -414,13 +427,9 @@ void setTextColor(real_color_t back, real_color_t front)
     now_set_color_front = front;
 }
 
-//The var of the callback function.
 static void (*onGetKeyFunction)(char keycode);
-
-//The flag that is send a key.
 static int isSendKeyCode = 0;
 
-//Set the callback function.
 void registerListenKey(void (*function)(char keycode))
 {
     onGetKeyFunction = function;
@@ -429,13 +438,13 @@ void registerListenKey(void (*function)(char keycode))
 
 void onKeyDown(char keycode)
 {
-    // printf("%c", ch);
+
     if (onGetKeyFunction && !isSendKeyCode)
     {
-        (*onGetKeyFunction)(keycode); //Call
+        (*onGetKeyFunction)(keycode); //函数调用
         isSendKeyCode = 1;
     }
-    // putch(ch);
+
 }
 
 void onKeyUp(char keycode)
@@ -443,34 +452,8 @@ void onKeyUp(char keycode)
     switch(keycode)
     {
         case 42:
-        case 54:    //Shift up envent.
+        case 54:
             is_shift_down = 0;
             break;
     }
 }
-
-
-static char keycode = -1;
-
-
-int getch()
-{
-    char keycode1;
-    // printf("onGetKeyFunction:%d\n", &onGetKeyFunction);
-    registerListenKey(&onGetKeyFunction);       //Register the callback function.
-    while(keycode == -1);       //Wait for user press key.
-    keycode1 = keycode;
-    keycode = -1;
-    return keycode1;
-}
-int getchInStep(uint32_t step)
-{
-    char keycode1;
-    // printf("onGetKeyFunction:%d\n", &onGetKeyFunction);
-    registerListenKey(&onGetKeyFunction);
-    while(step--);       //Wait for user press key in steps.
-    keycode1 = keycode;
-    keycode = -1;
-    return keycode1;
-}
-

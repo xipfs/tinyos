@@ -1,3 +1,12 @@
+/*
+* File name: lib/mem.c
+* Author   : 0xC000005
+* Version  : 0.1
+* Date     : 2016/06/29
+* Description: 内存处理函数
+*
+*/
+
 #include "mem.h"
 
 void memory_copy(uint8_t *source, uint8_t *dest, int nbytes) {
@@ -12,13 +21,16 @@ void memory_set(uint8_t *dest, uint8_t val, uint32_t len) {
     for ( ; len != 0; len--) *temp++ = val;
 }
 
+
 uint32_t free_mem_addr = 0x10000;
 
 uint32_t kmalloc(size_t size, int align, uint32_t *phys_addr) {
+
     if (align == 1 && (free_mem_addr & 0xFFFFF000)) {
         free_mem_addr &= 0xFFFFF000;
         free_mem_addr += 0x1000;
     }
+
     if (phys_addr) *phys_addr = free_mem_addr;
 
     uint32_t ret = free_mem_addr;
